@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Medicare Dubai | Sign Up</title>
+  <link rel="stylesheet" href="../../css/style.css">
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+    <script src="../../js/auth.js"></script>
+      
+</head>
+
+<body class="login-page">
+  <main class="page">
+    <section class="login-box" aria-labelledby="signup-title">
+      <h2 id="signup-title">Create your account</h2>
+      <p class="login-subtitle">
+        Sign up to join the Medicare Dubai portal.
+      </p>
+
+      <form id="signupForm">
+        <div class="field">
+          <label for="role">Role:</label>
+          <select id="role" name="role" required>
+            <option value="" disabled selected hidden>Select your role</option>
+            <option value="patient">Patient</option>
+            <option value="doctor">Doctor</option>
+            <option value="admin">Admin</option>
+          </select><br><br>
+
+          <label for="firstName">First name:</label>
+          <input type="text" id="firstName" name="firstName"
+                 placeholder="Enter your first name" required><br><br>
+
+          <label for="lastName">Last name:</label>
+          <input type="text" id="lastName" name="lastName"
+                 placeholder="Enter your last name" required><br><br>
+
+          <label for="email">Email:</label>
+          <input type="text" id="email" name="email"
+                 placeholder="Enter your email" required><br><br>
+
+          <label for="password">Generate password:</label>
+        <div class="password-wrap">
+          <input type="password" id="password" name="password"
+                placeholder="Create password" required>
+          <button type="button" id="eyeButton" class="eye-button"
+                  onclick="togglePassword()" aria-label="Show or hide password">👁️</button>
+        </div>
+
+        <label>
+            <input type="checkbox" id="consent" required> I agree to the <a href="../privacy.html">privacy policy</a>
+        </label>
+        <button type="button" class="generate-button" onclick="generateSecurePswrd()">Generate</button><br><br>
+
+          <button class="login-button" type="submit">Sign up</button>
+
+          <p class="auth-switch">
+            Already have an account? <a href="login.html">Log in</a>
+          </p>
+        </div>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

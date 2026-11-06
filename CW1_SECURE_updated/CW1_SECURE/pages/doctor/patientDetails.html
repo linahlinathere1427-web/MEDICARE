@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>patient details</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+    
+    <!-- BACKEND (security): before serving this page, check that the user is logged in AND has the role "doctor". Otherwise redirect to login.html. Also, a doctor should only see THEIR OWN patients. -->
+
+    <div class="layout">
+
+        <!-- sidebar layout -->
+        <aside class="sidebar">
+            <h2>MEDICARE DUBAI</h2>
+            <nav>
+                <a href="doctor_dashboard.html">Dashboard</a>
+                <a href="patient_search.html" class="active">Patients</a>
+                <a href="../login/login.html" id="logout-link">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+
+            <header class="topbar">
+                <h1 id="patientName">Name</h1>
+                <a class="btn" href="patient_search.html">Back to patients</a>
+            </header>
+
+            <section class="card">
+                <h2>Patient Information</h2>
+                <p><strong>Age:</strong> <span id="patientAge">--</span></p>
+                <p><strong>Gender:</strong> <span id="patientGender">--</span></p>
+                <p><strong>Phone:</strong> <span id="patientPhone">--</span></p>
+                <p><strong>Allergies:</strong> <span id="patientAllergies">--</span></p>
+            </section>
+
+            <!--======= CLINICAL NOTES ========-->
+            <section class="card">
+                <h2>Clinical Notes</h2>
+
+                <form id="noteForm" onsubmit="saveNote(event)">
+                    <label for="clinical_note">New Clinical note</label>
+                    <textarea id="clinical_note" placeholder="clinical observation" required></textarea>
+
+                    <label>
+                        <input type="checkbox" id="share_note"> share this note
+                    </label>
+
+                    <button class="btn" type="submit">Save note</button>
+                </form>
+
+                <hr class="divider">
+
+                <div id="noteList"></div>
+            </section>
+
+            <!--===== MEDICATIONS ========-->
+            <section class="card">
+                <h2>Medications</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Start Date</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="medBody"></tbody>
+                </table>
+
+                <form id="medForm" onsubmit="addMedication(event)">
+                    <label for="med_name">Medicine</label>
+                    <select id="med_name" required>
+                        <option value="" disabled selected hidden>Select a medicine</option>
+                    </select>
+
+                    <label for="dosage">Dosage</label>
+                    <input type="text" id="dosage" placeholder="e.g. 5 mg" required>
+
+                    <label for="frequency">Frequency</label>
+                    <input type="text" id="frequency" placeholder="e.g. Twice daily" required>
+
+                    <button class="btn" type="submit">Prescribe medication</button>
+                </form>
+            </section>
+
+            <!-- ===== past appointment ===== -->
+            <section class="card">
+                <h2>Past appointment</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="pastBody"></tbody>
+
+                </table>
+            </section>
+
+            <!-- ====== upcoming appointment ===== -->
+            <section class="card">
+                <h2>Upcoming appointment</h2>
+
+                <p id="noUpcoming">No upcoming appointment.</p>
+
+                <form id="apptForm" onsubmit="updateAppointment(event)" style="display:none">
+                    <label for="appt_date">date</label>
+                    <input type="date" id="appt_date" required>
+
+                    <label for="appt_time">time</label>
+                    <input type="time" id="appt_time" required>
+
+                    <label for="appt_status">Status</label>
+                    <select id="appt_status">
+                        <option value="scheduled">Scheduled</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="completed">Completed</option>
+                    </select>
+
+                    <button class="btn" type="submit">Update appointment</button>
+                </form>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+
+<script>
+    var doctor = requireRole("doctor");
+
+    // Get the patient id from the address
+    var address = new URLSearchParams(window.location.search);
+    var patientId = Number(address.get("id"));
+
+    // The appointment the doctor can edit
+    var upcomingAppt = null;
+
+    if (doctor) {
+
+        if (!patientId) {
+            document.getElementById("patientName").textContent = "Invalid patient ID";
+        } else {
+            whenReady(startPage);
+        }
+    }
+
+    // Calculate the patient's age
+    function getAge(dob) {
+
+        if (!dob) {
+            return "Not recorded";
+        }
+
+        var day;
+        var month;
+        var year;
+
+        // Support DD/MM/YYYY
+        if (dob.includes("/")) {
+            var parts = dob.split("/");
+
+            if (parts.length != 3) {
+                return "Not recorded";
+            }
+
+            day = Number(parts[0]);
+            month = Number(parts[1]);
+            year = Number(parts[2]);
+
+            // Support YYYY-MM-DD
+            } else if (dob.includes("-")) {
+            var parts = dob.split("-");
+
+            if (parts.length != 3) {
+                return "Not recorded";
+            }
+
+            year = Number(parts[0]);
+            month = Number(parts[1]);
+            day = Number(parts[2]);
+
+        } else {
+            return "Not recorded";
+        }
+
+        var birthDate = new Date(year, month - 1, day);
+
+        if (isNaN(birthDate.getTime()) ||birthDate.getFullYear() != year ||birthDate.getMonth() != month - 1 ||birthDate.getDate() != day) {
+            return "Not recorded";
+        }
+
+        var today = new Date();
+        var age = today.getFullYear() - year;
+
+        if (today.getMonth() < month - 1 ||(today.getMonth() == month - 1 && today.getDate() < day)) {
+            age = age - 1;
+        }
+
+        if (age < 0) {
+            return "Not recorded";
+        }
+
+        return age;
+    }
+
+
+    // Display the patient's information
+    function showPatient(patient) {
+        var firstName = patient.First || patient.first_name || "";
+        var lastName = patient.Last || patient.last_name || "";
+        var fullName = (firstName + " " + lastName).trim();
+
+        document.getElementById("patientName").textContent =
+            fullName || "Name not recorded";
+
+        document.getElementById("patientAge").textContent =
+            getAge(patient.DOB || patient.dob);
+
+        document.getElementById("patientGender").textContent =
+            patient.Gender || patient.gender || "Not recorded";
+
+        document.getElementById("patientPhone").textContent =
+            patient.Telephone || patient.telephone || patient.phone || "Not recorded";
+
+        document.getElementById("patientAllergies").textContent =
+            patient.Allergies || patient.allergies || "Not recorded";
+    }
+
+
+
+    function startPage() {
+
+        // Find the selected patient
+        getAllRecords("patients", function (patients) {
+
+            var found = null;
+
+            for (var i = 0; i < patients.length; i++) {
+                if (patients[i].id == patientId) {
+                    found = patients[i];
+                }
+            }
+
+            if (found == null) {
+                document.getElementById("patientName").textContent = "Patient not found";
+                return;
+            }
+
+            showPatient(found);
+            showNotes();
+            showMedications();
+            showAppointments();
+        });
+
+        // Fill the medicine drop-down
+        getAllRecords("medicines", function (medicines) {
+
+            var select = document.getElementById("med_name");
+
+            for (var i = 0; i < medicines.length; i++) {
+
+                var option = document.createElement("option");
+
+                option.value = medicines[i].id;
+                option.textContent = medicines[i].Drug;
+
+                select.appendChild(option);
+            }
+
+            // Coming from a prescription alert: pick that medicine
+            if (address.get("med")) {
+                select.value = address.get("med");
+            }
+        });
+    }
+
+
+    /* ---------- Clinical notes ---------- */
+
+    function saveNote(event) {
+
+        event.preventDefault();
+
+        var note = {
+            patientId: patientId,
+            doctorId: doctor.id,
+            doctorName: "Dr. " + doctor.name,
+            text: sanitizeInput(document.getElementById("clinical_note").value.trim()),
+            shared: document.getElementById("share_note").checked,
+            date: todayDate()
+        };
+
+        addRecord("notes", note, function () {
+            document.getElementById("noteForm").reset();
+            showNotes();
+        });
+    }
+
+
+    function showNotes() {
+
+        getAllRecords("notes", function (notes) {
+
+            var html = "";
+
+            for (var i = notes.length - 1; i >= 0; i--) {
+
+                var n = notes[i];
+
+                if (n.patientId == patientId) {
+
+                    html += "<p><small>" + n.date + "</small> ";
+
+                    if (n.shared) {
+                        html += '<span class="badge shared">shared</span>';
+                    } else {
+                        html += '<span class="badge private">Private</span>';
+                    }
+
+                    html += "<br>" + n.text + "</p>";
+                }
+            }
+
+            if (html == "") {
+                html = "<p>No notes yet.</p>";
+            }
+
+            document.getElementById("noteList").innerHTML = html;
+        });
+    }
+
+
+    /* ---------- Medications ---------- */
+
+    function addMedication(event) {
+
+        event.preventDefault();
+
+        var select = document.getElementById("med_name");
+        var medicineId = Number(select.value);
+
+        var medicine = {
+            patientId: patientId,
+            medicineId: medicineId,
+            medicineName: select.options[select.selectedIndex].text,
+            dosage: sanitizeInput(document.getElementById("dosage").value.trim()),
+            frequency: sanitizeInput(document.getElementById("frequency").value.trim()),
+            startDate: todayDate(),
+            doctorName: "Dr. " + doctor.name
+        };
+
+        addRecord("patientMeds", medicine, function () {
+
+            // Close the matching prescription request, if there is one
+            getAllRecords("alerts", function (alertList) {
+
+                for (var i = 0; i < alertList.length; i++) {
+
+                    var a = alertList[i];
+
+                    if (a.type == "prescription_request" && a.status == "open" &&
+                        a.patientId == patientId && a.medicineId == medicineId) {
+
+                        a.status = "resolved";
+                        saveRecord("alerts", a);
+                    }
+                }
+            });
+
+            document.getElementById("medForm").reset();
+            showMedications();
+        });
+    }
+
+
+    function removeMedication(id) {
+        deleteRecord("patientMeds", id, showMedications);
+    }
+
+
+    function showMedications() {
+
+        getAllRecords("patientMeds", function (meds) {
+
+            var html = "";
+
+            for (var i = 0; i < meds.length; i++) {
+
+                var m = meds[i];
+
+                if (m.patientId == patientId) {
+
+                    html += "<tr>";
+                    html += "<td>" + m.medicineName + "</td>";
+                    html += "<td>" + m.dosage + "</td>";
+                    html += "<td>" + m.frequency + "</td>";
+                    html += "<td>" + m.startDate + "</td>";
+                    html += '<td><button class="btn danger" onclick="removeMedication(' + m.id + ')">Remove</button></td>';
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='5'>No medications.</td></tr>";
+            }
+
+            document.getElementById("medBody").innerHTML = html;
+        });
+    }
+
+
+    /* ---------- Appointments ---------- */
+
+    function showAppointments() {
+
+        getAllRecords("appointments", function (appointments) {
+
+            var today = todayDate();
+            var pastHtml = "";
+
+            upcomingAppt = null;
+
+            for (var i = 0; i < appointments.length; i++) {
+
+                var a = appointments[i];
+
+                // Only this patient's appointments with this doctor
+                if (a.patientId == patientId && a.doctorId == doctor.id) {
+
+                    if (a.status == "scheduled" && a.date >= today) {
+
+                        // Keep the earliest upcoming appointment
+                        if (upcomingAppt == null ||
+                            (a.date + a.time) < (upcomingAppt.date + upcomingAppt.time)) {
+                            upcomingAppt = a;
+                        }
+
+                    } else {
+
+                        pastHtml += "<tr>";
+                        pastHtml += "<td>" + a.date + "</td>";
+                        pastHtml += "<td>" + formatTime(a.time) + "</td>";
+                        pastHtml += '<td><span class="badge ' + a.status + '">' + a.status + "</span></td>";
+                        pastHtml += "</tr>";
+                    }
+                }
+            }
+
+            if (pastHtml == "") {
+                pastHtml = "<tr><td colspan='3'>No past appointments.</td></tr>";
+            }
+
+            document.getElementById("pastBody").innerHTML = pastHtml;
+
+            // Show the update form only if there is an upcoming appointment
+            if (upcomingAppt == null) {
+
+                document.getElementById("apptForm").style.display = "none";
+                document.getElementById("noUpcoming").style.display = "block";
+
+            } else {
+
+                document.getElementById("apptForm").style.display = "block";
+                document.getElementById("noUpcoming").style.display = "none";
+
+                document.getElementById("appt_date").value = upcomingAppt.date;
+                document.getElementById("appt_time").value = upcomingAppt.time;
+                document.getElementById("appt_status").value = upcomingAppt.status;
+            }
+        });
+    }
+
+
+    // UPDATE the appointment
+    function updateAppointment(event) {
+
+        event.preventDefault();
+
+        if (upcomingAppt == null) {
+            return;
+        }
+
+        upcomingAppt.date = document.getElementById("appt_date").value;
+        upcomingAppt.time = document.getElementById("appt_time").value;
+        upcomingAppt.status = document.getElementById("appt_status").value;
+
+        saveRecord("appointments", upcomingAppt, function () {
+            alert("Appointment updated.");
+            showAppointments();
+        });
+    }
+</script>
+</body>
+</html>

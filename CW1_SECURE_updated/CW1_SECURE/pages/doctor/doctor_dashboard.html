@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor dashboard</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2>MEDICARE DUBAI</h2>
+
+            <nav>
+                <a href="doctor_dashboard.html" class="active">Dashboard</a>
+                <a href="patient_search.html">Patients</a>
+                <a href="../login/login.html" id="logout-link">Logout</a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="content">
+
+            <!-- Doctor profile -->
+            <header class="topbar">
+                <h1>Dashboard</h1>
+
+                <div class="profile">
+                    <div class="avatar" id="doctor-initials"></div>
+
+                    <div>
+                        <strong id="doctor-name">Loading...</strong>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard statistics -->
+            <section class="stats">
+
+                <div class="card">
+                    <h3>Today's Appointments</h3>
+                    <p class="number" id="appointment-number">Loading...</p>
+                </div>
+
+                <div class="card">
+                    <h3>Total Patients</h3>
+                    <p class="number" id="total-patients">Loading...</p>
+                </div>
+
+                <div class="card">
+                    <h3>Completed Today</h3>
+                    <p class="number" id="completed-today">Loading...</p>
+                </div>
+
+                <div class="card">
+                    <h3>Open Alerts</h3>
+                    <p class="number" id="alerts">Loading...</p>
+                </div>
+
+            </section>
+
+            <!-- Low medication alerts -->
+            <section class="card">
+                <h2>Low Medication Alerts</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Medicine</th>
+                            <th>Alert Sent</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="alerts-table">
+                        <tr>
+                            <td colspan="4">Loading alerts...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Today's appointments -->
+            <section class="card">
+                <h2>Today's Appointments</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="appointments-table">
+                        <tr>
+                            <td colspan="5">Loading appointments...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+
+<script>
+    var user = requireRole("doctor");
+
+    if (user) {
+
+        document.getElementById("doctor-name").textContent = user.name;
+        document.getElementById("doctor-initials").textContent = getInitials(user.name);
+
+        whenReady(loadDashboard);
+    }
+
+
+    function loadDashboard() {
+
+        // Total patients
+        getAllRecords("patients", function (patients) {
+            document.getElementById("total-patients").textContent = patients.length;
+        });
+
+        // Today's appointments with THIS doctor
+        getAllRecords("appointments", function (appointments) {
+
+            var today = todayDate();
+            var html = "";
+            var total = 0;
+            var completed = 0;
+
+            for (var i = 0; i < appointments.length; i++) {
+
+                var a = appointments[i];
+
+                if (a.doctorId == user.id && a.date == today) {
+
+                    if (a.status != "cancelled") {
+                        total = total + 1;
+                    }
+
+                    if (a.status == "completed") {
+                        completed = completed + 1;
+                    }
+
+                    html += "<tr>";
+                    html += "<td>" + a.patientName + "</td>";
+                    html += "<td>" + a.date + "</td>";
+                    html += "<td>" + formatTime(a.time) + "</td>";
+                    html += "<td>" + a.status + "</td>";
+                    html += '<td><a class="btn" href="patientDetails.html?id=' + a.patientId + '">Open</a></td>';
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='5'>No appointments today.</td></tr>";
+            }
+
+            document.getElementById("appointments-table").innerHTML = html;
+            document.getElementById("appointment-number").textContent = total;
+            document.getElementById("completed-today").textContent = completed;
+        });
+
+        // Open prescription requests
+        getAllRecords("alerts", function (alertList) {
+
+            var html = "";
+            var count = 0;
+
+            for (var i = alertList.length - 1; i >= 0; i--) {
+
+                var a = alertList[i];
+
+                if (a.type == "prescription_request" && a.status == "open") {
+
+                    count = count + 1;
+
+                    html += "<tr>";
+                    html += "<td>" + a.patientName + "</td>";
+                    html += "<td>" + a.medicineName + "</td>";
+                    html += "<td>" + new Date(a.createdAt).toLocaleString() + "</td>";
+                    html += '<td><a class="btn" href="patientDetails.html?id=' + a.patientId + '&med=' + a.medicineId + '">Prescribe</a></td>';
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='4'>No open alerts.</td></tr>";
+            }
+
+            document.getElementById("alerts-table").innerHTML = html;
+            document.getElementById("alerts").textContent = count;
+        });
+    }
+</script>
+</body>
+</html>

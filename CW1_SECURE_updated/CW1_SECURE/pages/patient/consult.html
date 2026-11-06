@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>consult doctor</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="layout">
+
+        <!-- sidebar layout -->
+        <aside class="sidebar">
+        <h2>MEDICARE DUBAI</h2>
+
+        <nav> <!--grouping navigations together-->
+            <a href="patient_dashboard.html">Dashboard</a>
+            <a href="consult.html" class="active">Consult Doctor</a> <!--consult doctor page-->
+            <a href="../login/login.html" onclick="logout()">Logout</a> <!--clears the logged in patient-->
+        </nav>
+        </aside>
+
+        <!-- main content -->
+        <main class="content">
+
+        <!-- patient profile -->
+        <header class="topbar">
+            <h1>Consult Doctor</h1>
+            <div class="profile">
+            <!-- filled in by patient.js from the patient database -->
+            <div class="avatar" id="avatar"> initials </div>
+            <div>
+                
+                <strong id="patientName"> PATIENT NAME</strong>
+            </div>
+            </div>
+        </header>
+
+        <!-- book an appointment -->
+        <section class="card">
+            <h2>Book an Appointment</h2>
+            <!-- bookAppointment() in patient.js saves it. the patient id comes from the login, NOT from the form -->
+            <form id="bookingForm" onsubmit="bookAppointment(event)">
+
+            <label for="doctor">Choose a Doctor:</label>
+            <select id="doctor" name="doctor" required>
+                <option value="" disabled selected hidden>Select a doctor</option>
+            </select>
+    <br><br>
+
+            <label for="apptDate">Date:</label>
+            <input type="date" id="apptDate" name="date" required><br><br> <!--opens calendar to select date-->
+
+            <label for="apptTime">Time:</label>
+            <select id="apptTime" name="time" required>
+                <option value="" disabled selected hidden>Select a time</option>
+                <option value="09:00">09:00 AM</option>
+                <option value="11:00">11:00 AM</option>
+                <option value="14:00">02:00 PM</option>
+                <option value="16:00">04:00 PM</option>
+            </select><br><br>
+
+            <label for="reason">Reason for visit (optional):</label>
+            <textarea id="reason" name="reason" placeholder="Briefly describe your request"></textarea><br><br>
+
+            <button class="btn" type="submit">Book appointment</button>
+            </form>
+        </section>
+
+        <!-- request a prescription -->
+        <section class="card">
+            <h2>Request a Prescription</h2>
+            <!-- requestPrescription() in patient.js saves it for the doctor -->
+            <form id="prescriptionForm" onsubmit="requestPrescription(event)">
+
+            <label for="medicine">Medicine:</label>
+            <!-- options are added by patient.js (fillMedicineList) -->
+            <select id="medicine" name="medicine" required>
+                <option value="" disabled selected hidden>Select a medicine</option>
+            </select><br><br>
+
+            <label for="message">Message to doctor (optional):</label>
+            <textarea id="message" name="message" placeholder="e.g. I have 3 days of tablets left"></textarea><br><br>
+
+            <button class="btn" type="submit">Request prescription</button>
+            </form>
+        </section>
+
+        <!-- prescription requests already sent -->
+        <section class="card">
+            <h2>My Prescription Requests</h2>
+            <table>
+
+            <thead>
+                <tr>
+                <th>Date</th>
+                <th>Medicine</th>
+                <th>Status</th>
+                </tr>
+            </thead>
+
+            <!-- rows are filled in by patient.js (showPrescriptions) -->
+            <tbody id="prescriptionRows">
+            </tbody>
+            </table>
+        </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+
+<script>
+    var user = requireRole("patient");
+
+    if (user) {
+        whenReady(startPage);
+    }
+
+
+    function startPage() {
+
+        document.getElementById("patientName").textContent = user.name;
+        document.getElementById("avatar").textContent = getInitials(user.name);
+
+        // Cannot book a date in the past
+        document.getElementById("apptDate").min = todayDate();
+
+        loadDoctors();
+        loadMedicines();
+        showPrescriptions();
+    }
+
+
+    // Fill the doctor drop-down
+    function loadDoctors() {
+
+        getAllRecords("doctors", function (doctors) {
+
+            var select = document.getElementById("doctor");
+
+            for (var i = 0; i < doctors.length; i++) {
+
+                var option = document.createElement("option");
+
+                option.value = doctors[i].id;
+                option.textContent = "Dr. " + doctors[i].first_name + " " + doctors[i].last_name;
+
+                select.appendChild(option);
+            }
+        });
+    }
+
+
+    // Fill the medicine drop-down
+    function loadMedicines() {
+
+        getAllRecords("medicines", function (medicines) {
+
+            var select = document.getElementById("medicine");
+
+            for (var i = 0; i < medicines.length; i++) {
+
+                var option = document.createElement("option");
+
+                option.value = medicines[i].id;
+                option.textContent = medicines[i].Drug;
+
+                select.appendChild(option);
+            }
+        });
+    }
+
+
+    // Book an appointment
+    function bookAppointment(event) {
+
+        event.preventDefault();
+
+        var select = document.getElementById("doctor");
+        var doctorId = Number(select.value);
+        var date = document.getElementById("apptDate").value;
+        var time = document.getElementById("apptTime").value;
+
+        // Check that this doctor is free at this time
+        getAllRecords("appointments", function (appointments) {
+
+            for (var i = 0; i < appointments.length; i++) {
+
+                var a = appointments[i];
+
+                if (a.doctorId == doctorId && a.date == date &&
+                    a.time == time && a.status == "scheduled") {
+
+                    alert("That slot is already taken. Please choose another time.");
+                    return;
+                }
+            }
+
+            var appointment = {
+                patientId: user.id,
+                patientName: user.name,
+                doctorId: doctorId,
+                doctorName: select.options[select.selectedIndex].text,
+                date: date,
+                time: time,
+                reason: sanitizeInput(document.getElementById("reason").value.trim()),
+                status: "scheduled"
+            };
+
+            addRecord("appointments", appointment, function () {
+                alert("Appointment booked.");
+                document.getElementById("bookingForm").reset();
+            });
+        });
+    }
+
+
+    // Request a prescription (this becomes an alert for the doctor)
+    function requestPrescription(event) {
+
+        event.preventDefault();
+
+        var select = document.getElementById("medicine");
+
+        var request = {
+            type: "prescription_request",
+            patientId: user.id,
+            patientName: user.name,
+            medicineId: Number(select.value),
+            medicineName: select.options[select.selectedIndex].text,
+            message: sanitizeInput(document.getElementById("message").value.trim()),
+            status: "open",
+            createdAt: Date.now()
+        };
+
+        addRecord("alerts", request, function () {
+            document.getElementById("prescriptionForm").reset();
+            showPrescriptions();
+        });
+    }
+
+
+    // Show this patient's prescription requests (newest first)
+    function showPrescriptions() {
+
+        getAllRecords("alerts", function (alertList) {
+
+            var html = "";
+
+            for (var i = alertList.length - 1; i >= 0; i--) {
+
+                var a = alertList[i];
+
+                if (a.type == "prescription_request" && a.patientId == user.id) {
+
+                    var status = "Prescribed";
+
+                    if (a.status == "open") {
+                        status = "Pending";
+                    }
+
+                    html += "<tr>";
+                    html += "<td>" + new Date(a.createdAt).toLocaleDateString() + "</td>";
+                    html += "<td>" + a.medicineName + "</td>";
+                    html += "<td>" + status + "</td>";
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='3'>No requests yet.</td></tr>";
+            }
+
+            document.getElementById("prescriptionRows").innerHTML = html;
+        });
+    }
+</script>  
+</body>
+</html>

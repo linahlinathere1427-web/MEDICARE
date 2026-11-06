@@ -1,0 +1,697 @@
+/* =========================================
+   Medicare Dubai - main stylesheet
+========================================= */
+
+/* ---------- Colours (change them here only) ---------- */
+:root {
+    --navy: #0b2a4a;
+    --teal: #0f8b8d;
+    --teal-dark: #0a6c6e;
+    --light: #f3f6f9;
+    --border: #dde4ea;
+    --text: #22303c;
+    --grey: #6b7a88;
+    --red: #c0392b;
+    --green: #2e8b57;
+    --blue: #2a6fb0;
+}
+
+
+/* =========================================
+   1. BASICS
+========================================= */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: var(--light);
+    line-height: 1.5;
+}
+
+h1, h2, h3 {
+    color: var(--navy);
+    margin-top: 0;
+}
+
+h1 { font-size: 26px; }
+h2 { font-size: 19px; }
+h3 { font-size: 15px; color: var(--grey); font-weight: normal; }
+
+a {
+    color: var(--teal-dark);
+}
+
+/* Images never show bigger than their box */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* =========================================
+   2. DASHBOARD PAGES (sidebar + content)
+========================================= */
+.layout {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 230px;
+    background: var(--navy);
+    padding: 25px 0;
+    flex-shrink: 0;
+}
+
+.sidebar h2 {
+    color: white;
+    font-size: 17px;
+    letter-spacing: 1px;
+    padding: 0 22px 22px 22px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* A small medical cross before the name */
+.sidebar h2::before {
+    content: "\271A";
+    color: var(--teal);
+    margin-right: 8px;
+}
+
+.sidebar nav a {
+    display: block;
+    padding: 13px 22px;
+    color: #cfd9e3;
+    text-decoration: none;
+    border-left: 4px solid transparent;
+}
+
+.sidebar nav a:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: white;
+}
+
+.sidebar nav a.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border-left-color: var(--teal);
+}
+
+.content {
+    flex: 1;
+    padding: 25px 35px;
+}
+
+/* Top bar (page title + user) */
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--border);
+}
+
+.topbar h1 {
+    margin: 0;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--teal);
+    color: white;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Cards */
+.card {
+    background: white;
+    border: 1px solid var(--border);
+    border-top: 3px solid var(--teal);
+    border-radius: 6px;
+    padding: 22px;
+    margin-bottom: 22px;
+}
+
+/* Statistic boxes on the doctor dashboard */
+.stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+    margin-bottom: 22px;
+}
+
+.stats .card {
+    margin-bottom: 0;
+    text-align: center;
+}
+
+.number {
+    font-size: 34px;
+    font-weight: bold;
+    color: var(--teal-dark);
+    margin: 8px 0 0 0;
+}
+
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 22px;
+}
+
+.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 18px 0;
+}
+
+
+/* =========================================
+   3. TABLES
+========================================= */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+th {
+    background: var(--light);
+    color: var(--navy);
+    text-align: left;
+    padding: 11px 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid var(--border);
+}
+
+td {
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--border);
+}
+
+tr:hover td {
+    background: #fafcfd;
+}
+
+
+/* =========================================
+   4. FORMS AND BUTTONS
+========================================= */
+label {
+    display: block;
+    margin: 14px 0 5px 0;
+    font-weight: bold;
+    color: var(--navy);
+    font-size: 14px;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="tel"],
+input[type="date"],
+input[type="time"],
+select,
+textarea {
+    width: 100%;
+    max-width: 480px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 15px;
+    font-family: inherit;
+    background: white;
+}
+
+textarea {
+    min-height: 90px;
+    resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 3px rgba(15, 139, 141, 0.15);
+}
+
+input[type="checkbox"] {
+    margin-right: 6px;
+}
+
+.btn {
+    display: inline-block;
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    margin-top: 14px;
+    margin-right: 6px;
+}
+
+.btn:hover {
+    background: var(--teal-dark);
+}
+
+.btn.danger {
+    background: var(--red);
+}
+
+.btn.danger:hover {
+    background: #a02e22;
+}
+
+/* Buttons inside table rows are smaller */
+td .btn {
+    margin: 0;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.inline-form {
+    display: inline;
+}
+
+
+/* =========================================
+   5. BADGES (small coloured labels)
+========================================= */
+.badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    color: white;
+    background: var(--grey);
+}
+
+.badge.shared,
+.badge.completed { background: var(--green); }
+
+.badge.private   { background: var(--grey); }
+.badge.scheduled { background: var(--blue); }
+.badge.low,
+.badge.cancelled { background: var(--red); }
+
+
+/* =========================================
+   6. LOGIN AND SIGNUP PAGES
+========================================= */
+body.login-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(135deg, var(--navy), var(--teal-dark));
+}
+
+/* White header at the top (login page only) */
+body.login-page header {
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 15px;
+    padding: 12px 40px;
+    border-bottom: 3px solid var(--teal);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--navy);
+    letter-spacing: 1px;
+}
+
+.brand img {
+    width: 48px;
+    height: 48px;
+    object-fit: contain;
+}
+
+ul.contact {
+    display: flex;
+    gap: 25px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    color: var(--grey);
+}
+
+.book-btn {
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-weight: bold;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.book-btn:hover {
+    background: var(--teal-dark);
+}
+
+/* Main area: text on the left, form on the right */
+main.page {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 60px;
+    padding: 40px;
+}
+
+.intro {
+    max-width: 520px;
+    color: white;
+}
+
+.eyebrow {
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-size: 13px;
+    color: #9fe0e1;
+    margin: 0 0 10px 0;
+}
+
+.intro h1 {
+    color: white;
+    font-size: 40px;
+    line-height: 1.2;
+    margin-bottom: 18px;
+}
+
+.intro h1 span {
+    color: #9fe0e1;
+}
+
+.intro-text {
+    font-size: 17px;
+    color: #dbe7f0;
+}
+
+/* The white login / signup card */
+.login-box {
+    background: white;
+    width: 100%;
+    max-width: 420px;
+    padding: 30px;
+    border-radius: 8px;
+    border-top: 4px solid var(--teal);
+}
+
+.login-box h2 {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.login-subtitle {
+    color: var(--grey);
+    margin: 0 0 15px 0;
+}
+
+.login-box input,
+.login-box select,
+.login-box textarea {
+    max-width: 100%;
+}
+
+.login-box label {
+    margin-top: 0;
+}
+
+.login-button {
+    width: 100%;
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: var(--teal-dark);
+}
+
+.auth-switch {
+    text-align: center;
+    margin: 15px 0 0 0;
+    font-size: 14px;
+    color: var(--grey);
+}
+
+/* Signup extras */
+.password-wrap {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+}
+
+.eye-button {
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0 12px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.generate-button {
+    background: var(--navy);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    margin: 6px 0 12px 0;
+}
+
+.generate-button:hover {
+    background: #12406f;
+}
+
+/* Booking pop-up (only if you keep the <dialog>) */
+dialog {
+    border: none;
+    border-radius: 8px;
+    padding: 25px;
+    width: 90%;
+    max-width: 520px;
+    border-top: 4px solid var(--teal);
+}
+
+dialog::backdrop {
+    background: rgba(11, 42, 74, 0.6);
+}
+
+dialog > button {
+    float: right;
+    background: var(--light);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 5px 12px;
+    cursor: pointer;
+}
+
+dialog input,
+dialog select,
+dialog textarea {
+    max-width: 100%;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+
+/* =========================================
+   7. FRONT PAGE (index.html)
+========================================= */
+.site-header {
+    background: white;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.site-header .logo {
+    font-size: 19px;
+    font-weight: bold;
+    color: var(--navy);
+    letter-spacing: 1px;
+    text-decoration: none;
+}
+
+.site-header .logo span {
+    color: var(--teal);
+}
+
+.site-header nav a {
+    margin-left: 22px;
+    text-decoration: none;
+    color: var(--navy);
+    font-weight: bold;
+}
+
+.site-header nav a:hover {
+    color: var(--teal);
+}
+
+.hero {
+    background-color: var(--navy);
+    background-image: linear-gradient(rgba(11, 42, 74, 0.75), rgba(11, 42, 74, 0.75)),
+                      url("./images/bg.jpg");
+    background-size: cover;
+    background-position: center;
+    color: white;
+    padding: 90px 40px;
+}
+
+.hero h1 {
+    color: white;
+    font-size: 38px;
+    max-width: 600px;
+}
+
+.hero p {
+    max-width: 560px;
+    font-size: 17px;
+    color: #e3ecf3;
+}
+
+.services {
+    max-width: 1000px;
+    margin: -40px auto 40px auto;
+    padding: 0 20px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+.services .card {
+    margin-bottom: 0;
+}
+
+.services img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 4px;
+    margin-bottom: 12px;
+}
+
+.footer {
+    background: var(--navy);
+    color: #b8c6d3;
+    text-align: center;
+    padding: 20px;
+    font-size: 13px;
+}
+
+.footer a {
+    color: white;
+}
+
+/* Plain text pages such as privacy.html */
+body > main.content {
+    max-width: 850px;
+    margin: 30px auto;
+}
+
+
+/* =========================================
+   8. SMALL SCREENS
+========================================= */
+@media (max-width: 800px) {
+
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        padding: 15px 0;
+    }
+
+    .stats,
+    .services {
+        grid-template-columns: 1fr;
+    }
+
+    .content {
+        padding: 18px;
+    }
+
+    .hero {
+        padding: 50px 20px;
+    }
+
+    table {
+        display: block;
+        overflow-x: auto;
+    }
+
+    main.page {
+        flex-direction: column;
+        padding: 25px 15px;
+        gap: 25px;
+    }
+
+    .intro h1 {
+        font-size: 28px;
+    }
+
+    ul.contact {
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    body.login-page header {
+        padding: 12px 15px;
+    }
+
+    .row {
+        grid-template-columns: 1fr;
+    }
+}

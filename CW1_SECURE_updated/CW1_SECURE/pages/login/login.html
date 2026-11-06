@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicare Dubai | Patient Login</title>
+
+  <link rel="stylesheet" href="../../css/style.css">
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+    <script src="../../js/auth.js"></script>
+
+</head>
+
+<body  class="login-page">
+  <header>
+    <div class="brand">
+      <img src="../../css/logo.png" alt="Medicare Dubai logo">
+      Medicare Dubai
+    </div>
+
+    <ul class="contact">
+      <li>+971 4 123 4567</li>
+      <li>info@medicaredubai.ae</li>
+      <li>Sheikh Zayed Road, Dubai</li>
+    </ul>
+
+  </header>
+
+  <main class="page">
+    <section class="intro" aria-labelledby="page-title">
+      <p class="eyebrow">Medicare Dubai Patient Portal</p>
+
+      <h1 id="page-title">
+        A HEALTHIER TOMORROW <span>STARTS HERE.</span>
+      </h1>
+
+      <p class="intro-text">
+        Manage appointments, access your health information, and stay connected
+        with your Medicare Dubai care team in one secure place.
+      </p>
+    </section>
+
+    <section class="login-box" aria-labelledby="login-title">
+      <h2 id="login-title">Welcome back</h2>
+
+      <p class="login-subtitle">
+        Sign in to manage your Medicare Dubai account.
+      </p>
+
+      <form id="loginForm">
+        <label for="role">Role:</label>
+        <select id="role" name="role" required>
+          <option value="" disabled selected hidden>Select your role</option>
+          <option value="patient">Patient</option>
+          <option value="doctor">Doctor</option>
+          <option value="admin">Admin</option>
+        </select>
+        <br><br>
+
+        <label for="email">Email:</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          placeholder="Enter your email"
+          required
+        >
+        <br><br>
+
+        <label for="password">Password:</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          placeholder="Enter password"
+          required
+        >
+        <br><br>
+
+        <button class="login-button" type="submit">Log in</button>
+
+        <p class="auth-switch">
+          Don’t have an account?
+          <a href="signup.html">Register Here</a>
+        </p>
+      </form>
+    </section>
+  </main>
+</body>
+</html>

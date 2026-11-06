@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>search patient</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+
+
+    <div class="layout">
+
+        <!-- Sidebar layout -->
+        <aside class="sidebar">
+            <h2>MEDICARE DUBAI</h2>
+            <nav>
+                <a href="doctor_dashboard.html">Dashboard</a>
+                <a href="patient_search.html" class="active">Patients</a>
+                <a href="../login/login.html" id="logout-link">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+
+            <header class="topbar">
+                <h1>All Patients</h1>
+            </header>
+
+            <!-- Patient search -->
+            <section class="card">
+                <form onsubmit="searchPatients(event)">
+                    <label for="search">Search Patients</label>
+                    <input type="text" id="search" name="search"
+                           placeholder="Search for name" oninput="showPatients()">
+                    <button class="btn" type="submit">Search</button>
+                </form>
+            </section>
+
+            <!-- Patient table -->
+            <section class="card">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Age</th>
+                            <th>Phone</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="patientBody">
+                        <tr>
+                            <td colspan="5">Loading patients...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+
+<script>
+    var user = requireRole("doctor");
+    var allPatients = [];
+
+    if (user) {
+        whenReady(function () {
+            getAllRecords("patients", function (list) {
+                allPatients = list;
+                showPatients();
+            });
+        });
+    }
+
+    // Calculate age from date of birth
+    function getAge(dob) {
+
+        if (!dob) {
+            return "N/A";
+        }
+
+        var day;
+        var month;
+        var year;
+        var parts;
+
+        // Support dates such as DD/MM/YYYY
+        if (dob.includes("/")) {
+
+            parts = dob.split("/");
+
+            if (parts.length != 3) {
+                return "N/A";
+            }
+
+            day = Number(parts[0]);
+            month = Number(parts[1]);
+            year = Number(parts[2]);
+
+        // Support dates such as YYYY-MM-DD
+        } else if (dob.includes("-")) {
+
+            parts = dob.split("-");
+
+            if (parts.length != 3) {
+                return "N/A";
+            }
+
+            year = Number(parts[0]);
+            month = Number(parts[1]);
+            day = Number(parts[2]);
+
+        } else {
+            return "N/A";
+        }
+
+        var birthDate = new Date(year, month - 1, day);
+
+        // Check whether the date is valid
+        if (
+            isNaN(birthDate.getTime()) ||
+            birthDate.getFullYear() != year ||
+            birthDate.getMonth() != month - 1 ||
+            birthDate.getDate() != day
+        ) {
+            return "N/A";
+        }
+
+        var today = new Date();
+        var age = today.getFullYear() - year;
+
+        if (
+            today.getMonth() < month - 1 ||
+            (today.getMonth() == month - 1 && today.getDate() < day)
+        ) {
+            age = age - 1;
+        }
+
+        if (age < 0) {
+            return "N/A";
+        }
+
+        return age;
+    }
+
+    // Show patients in the table
+    function showPatients() {
+
+        var searchText = document.getElementById("search").value.toLowerCase();
+        var html = "";
+
+        for (var i = 0; i < allPatients.length; i++) {
+
+            var patient = allPatients[i];
+
+            var firstName = patient.First || patient.first_name || "";
+            var lastName = patient.Last || patient.last_name || "";
+            var fullName = (firstName + " " + lastName).trim();
+            var phone = patient.Telephone || patient.telephone || "N/A";
+
+            if (fullName.toLowerCase().includes(searchText)) {
+
+                html += "<tr>";
+                html += "<td>" + fullName + "</td>";
+                html += "<td>" + getAge(patient.DOB || patient.dob) + "</td>";
+                html += "<td>" + phone + "</td>";
+                html += '<td><a class="btn" href="patientDetails.html?id=' + patient.id + '">Open</a></td>';
+                html += "</tr>";
+            }
+        }
+
+        if (html == "") {
+            html = '<tr><td colspan="5">No patients found.</td></tr>';
+        }
+
+        document.getElementById("patientBody").innerHTML = html;
+    }
+
+
+    // Search button
+    function searchPatients(event) {
+        event.preventDefault();
+        showPatients();
+    }
+
+</script>
+</body>
+</html>

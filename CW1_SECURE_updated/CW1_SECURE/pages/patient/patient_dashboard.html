@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>patient dashboard</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="layout">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <h2>MEDICARE DUBAI</h2>
+
+            <nav>
+                <a href="patient_dashboard.html" class="active">Dashboard</a>
+                <a href="consult.html">Consult Doctor</a>
+                <a href="../login/login.html" onclick="logout()">Logout</a>
+            </nav>
+        </aside>
+
+        <!-- Main content -->
+        <main class="content">
+
+            <!-- Patient profile -->
+            <header class="topbar">
+                <h1>Dashboard</h1>
+
+                <div class="profile">
+                    <div class="avatar" id="patient-initials">--</div>
+                    <strong id="patient-name">Loading...</strong>
+                </div>
+            </header>
+
+            <!-- My details (the patient's own stored information) -->
+            <section class="card">
+                <h2>My Details</h2>
+                <p><strong>Name:</strong> <span id="detailName">--</span></p>
+                <p><strong>Email:</strong> <span id="detailEmail">--</span></p>
+                <p><strong>Date of birth:</strong> <span id="detailDob">--</span></p>
+                <p><strong>Telephone:</strong> <span id="detailPhone">--</span></p>
+                <p><strong>Address:</strong> <span id="detailAddress">--</span></p>
+                <p><strong>NHS number:</strong> <span id="detailNhs">--</span></p>
+                <p><strong>Allergies:</strong> <span id="detailAllergies">--</span></p>
+            </section>
+
+            <!-- Upcoming appointments -->
+            <section class="card">
+                <h2>Upcoming Appointments</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Doctor</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="appointmentRows">
+                        <tr>
+                            <td colspan="5">Loading appointments...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Active medications -->
+            <section class="card">
+                <h2>Active Medications</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Medicine</th>
+                            <th>Dosage</th>
+                            <th>Frequency</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="medicineRows">
+                        <tr>
+                            <td colspan="4">Loading medications...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <!-- Notes from doctor -->
+            <section class="card">
+                <h2>Notes from Doctor</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Note</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="noteRows">
+                        <tr>
+                            <td colspan="3">Loading notes...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+
+<script>
+    var user = requireRole("patient");
+
+    if (user) {
+        whenReady(startPage);
+    }
+
+
+    function startPage() {
+
+        document.getElementById("patient-name").textContent = user.name;
+        document.getElementById("patient-initials").textContent = getInitials(user.name);
+
+        loadMyDetails();
+        loadAppointments();
+        loadMedications();
+        loadNotes();
+    }
+
+    // Turn text saved by sanitizeInput() back into normal characters.
+    function unescapeInput(text) {
+        return String(text)
+            .replace(/&#x2F;/g, "/")
+            .replace(/&#x27;/g, "'")
+            .replace(/&quot;/g, '"')
+            .replace(/&gt;/g, ">")
+            .replace(/&lt;/g, "<")
+            .replace(/&amp;/g, "&");
+    }
+
+    // Show one detail, or "Not recorded" if the patient has none saved
+    function showDetail(id, value) {
+        var text = "Not recorded";
+        if (value !== undefined && value !== null && value !== "") {
+            text = unescapeInput(value);
+        }
+        document.getElementById(id).textContent = text; //sets or reads the plain text inside an HTML element
+    }
+
+    // MY DETAILS card. read this patient's own record (decrypted by findUser)
+    function loadMyDetails() {
+        findUser("patients", user.email, function (patient) {
+
+            if (!patient) {
+                showDetail("detailName", "");
+                return;
+            }
+
+            var fullName = (patient.First || "") + " " + (patient.Last || "");
+
+            showDetail("detailName", fullName.trim());
+            showDetail("detailEmail", patient.email);
+            showDetail("detailDob", patient.DOB);
+            showDetail("detailPhone", patient.Telephone);
+            showDetail("detailAddress", patient.Address);
+            showDetail("detailNhs", patient.NHS);
+            showDetail("detailAllergies", patient.Allergies);
+        });
+    }
+    // Upcoming appointments (including ones the doctor has changed)
+    function loadAppointments() {
+
+        var today = todayDate();
+
+        getAllRecords("appointments", function (appointments) {
+
+            var html = "";
+
+            for (var i = 0; i < appointments.length; i++) {
+
+                var a = appointments[i];
+
+                if (a.patientId == user.id && a.date >= today && a.status != "completed") {
+
+                    html += "<tr>";
+                    html += "<td>" + a.doctorName + "</td>";
+                    html += "<td>" + a.date + "</td>";
+                    html += "<td>" + formatTime(a.time) + "</td>";
+                    html += "<td>" + a.status + "</td>";
+                    html += "<td>-</td>";
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='5'>No appointments found.</td></tr>";
+            }
+
+            document.getElementById("appointmentRows").innerHTML = html;
+        });
+    }
+
+
+    // Medicines the doctor prescribed
+    function loadMedications() {
+
+        getAllRecords("patientMeds", function (meds) {
+
+            var html = "";
+
+            for (var i = 0; i < meds.length; i++) {
+
+                var m = meds[i];
+
+                if (m.patientId == user.id) {
+
+                    html += "<tr>";
+                    html += "<td>" + m.medicineName + "</td>";
+                    html += "<td>" + m.dosage + "</td>";
+                    html += "<td>" + m.frequency + "</td>";
+                    html += '<td><a href="consult.html">Request refill</a></td>';
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='4'>No medications found.</td></tr>";
+            }
+
+            document.getElementById("medicineRows").innerHTML = html;
+        });
+    }
+
+
+    // Notes the doctor chose to share (newest first)
+    function loadNotes() {
+
+        getAllRecords("notes", function (notes) {
+
+            var html = "";
+
+            for (var i = notes.length - 1; i >= 0; i--) {
+
+                var n = notes[i];
+
+                if (n.patientId == user.id && n.shared == true) {
+
+                    html += "<tr>";
+                    html += "<td>" + n.date + "</td>";
+                    html += "<td>" + n.doctorName + "</td>";
+                    html += "<td>" + n.text + "</td>";
+                    html += "</tr>";
+                }
+            }
+
+            if (html == "") {
+                html = "<tr><td colspan='3'>No shared notes found.</td></tr>";
+            }
+
+            document.getElementById("noteRows").innerHTML = html;
+        });
+    }
+</script> 
+</body>
+</html>

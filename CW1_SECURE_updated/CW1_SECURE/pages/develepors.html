@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    <title>Medicare Database</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+</head>
+<body>
+<h1>Medicare Database</h1>
+
+<button onclick="createDB()">Create/Open Database</button>
+<button onclick="getData()">Get Data</button>
+<button onclick="addData()">Add Data</button><br>
+<button onclick="clearData()">Clear Data</button>
+<br><br>
+<select id="storeName">
+    <option>admins</option>
+    <option>doctors</option>
+    <option>patients</option>
+    <option>medicines</option>
+</select>
+<button onclick="showData()">Show Data</button>
+<button onclick="deleteDB()">Delete Database</button>
+
+<div id="output"></div>
+<div id="resultContainer"></div>
+<script>
+    let db;
+    let dbName = 'medicareSecureDB';
+    let encryptionKey = "IloveSecureWebandItsPrettyFunTodoThisCW2026";
+    let admins_data;
+    let doctors_data;
+    let patients_data;
+    let medicines_data;
+
+    function createDB() {
+        var request = indexedDB.open(dbName, 1);
+
+        request.onerror = function(event) {
+            console.log('Error opening database');
+        };
+
+        request.onsuccess = function(event) {
+            db = event.target.result;
+            console.log('Database opened successfully');
+        };
+
+        request.onupgradeneeded = function(event) {
+            db = event.target.result;
+
+            var adminStore = db.createObjectStore('admins', { keyPath: 'id', autoIncrement: true });
+            adminStore.createIndex('email', 'email', { unique: false });
+
+            var doctorStore = db.createObjectStore('doctors', { keyPath: 'id', autoIncrement: true });
+            doctorStore.createIndex('email', 'email', { unique: false });
+
+            var patientStore = db.createObjectStore('patients', { keyPath: 'id', autoIncrement: true });
+            patientStore.createIndex('email', 'email', { unique: false });
+
+            db.createObjectStore('medicines', { keyPath: 'id', autoIncrement: true });
+
+            console.log('Database Created with all object stores');
+        };
+    }
+
+    function getData() {
+        var resultContainer = document.getElementById('output');
+        var outstr = '<p>Getting Data ...</p>'
+        resultContainer.innerHTML = outstr;
+
+        fetch('https://jsethi-mdx.github.io/cst2572.github.io/admin.json')
+            .then(response => response.json())
+            .then(data => {
+                admins_data = data;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        outstr += '<p>Admins data received ...</p>';
+
+        fetch('https://jsethi-mdx.github.io/cst2572.github.io/doctors.json')
+            .then(response => response.json())
+            .then(data => {
+                doctors_data = data;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        outstr += '<p>Doctors data received ...</p>';
+
+        fetch('https://jsethi-mdx.github.io/cst2572.github.io/patients.json')
+            .then(response => response.json())
+            .then(data => {
+                patients_data = data;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        outstr += '<p>Patients data received ...</p>';
+
+        fetch('https://jsethi-mdx.github.io/cst2572.github.io/medicines.json')
+            .then(response => response.json())
+            .then(data => {
+                medicines_data = data;
+            })
+            .catch(error => {
+                console.log('Error:', error);
+            });
+        outstr += '<p>Medicines data received ...</p>';
+
+        resultContainer.innerHTML = outstr;
+
+    }
+
+	function addData() {
+
+		if (!db) {
+            console.error("Database not open yet!");
+            return;
+        }
+
+        if (!admins_data || !doctors_data || !patients_data || !medicines_data) {
+            console.error("Get Data first and wait a moment!");
+            return;
+        }
+
+        var medicareTx = db.transaction(['admins', 'doctors', 'patients', 'medicines'], 'readwrite');
+
+        var adminStore = medicareTx.objectStore('admins');
+        var doctorStore = medicareTx.objectStore('doctors');
+        var patientStore = medicareTx.objectStore('patients');
+        var medicineStore = medicareTx.objectStore('medicines');
+
+
+        admins_data.forEach(admin => {
+        var data = { first_name: admin.first_name,
+					last_name: admin.last_name,
+					email: admin.email.trim().toLowerCase(),
+				   };
+
+			adminStore.add(data);
+        });
+
+        doctors_data.forEach(doctor => {
+        var data = { first_name: doctor.first_name,
+					last_name: doctor.last_name,
+					gender: doctor.gender,
+					Address: doctor.Address,
+					email: doctor.email.trim().toLowerCase(),
+					Telephone: doctor.Telephone,
+				   };
+
+			doctorStore.add(data);
+        });
+
+        patients_data.forEach(patient => {
+        var data = { First: patient.First,
+					Last: patient.Last,
+					email: patient.email.trim().toLowerCase(),
+					NHS: patient.NHS,
+					DOB: patient.DOB,
+					Gender: patient.Gender,
+					Address: patient.Address,
+					Telephone: patient.Telephone,
+					Allergies: patient.Allergies,
+				   };
+
+			patientStore.add(data);
+        });
+
+        medicines_data.forEach(medicine => {
+        var data = { Drug: medicine.Drug,
+				   };
+
+			medicineStore.add(data);
+        });
+
+		medicareTx.oncomplete = function() {
+            console.log("All data added successfully!");
+            document.getElementById('output').innerHTML = '<p>All data added successfully!</p>';
+        };
+    }
+
+    function clearData() {
+        var transaction = db.transaction(['admins', 'doctors', 'patients', 'medicines'], 'readwrite');
+
+        // Clear all entries in each object store
+        var clearRequest = transaction.objectStore('admins').clear();
+        transaction.objectStore('doctors').clear();
+        transaction.objectStore('patients').clear();
+        transaction.objectStore('medicines').clear();
+
+        clearRequest.onsuccess = function(event) {
+            console.log("All entries cleared successfully");
+        };
+
+        clearRequest.onerror = function(event) {
+            console.log("Error clearing entries in the object stores");
+        };
+
+        transaction.oncomplete = function() {
+            console.log("Transaction completed");
+            document.getElementById('output').innerHTML = '<p>All stores cleared.</p>';
+            document.getElementById('resultContainer').innerHTML = '';
+        };
+    }
+
+    function showData() {
+		//The function is displaying data from the *_data variables which are fetched from JSON
+		const outputDiv = document.getElementById('output');
+		var storeName = document.getElementById('storeName').value;
+		outputDiv.innerHTML = '<h3>Stored ' + storeName + ' in IndexedDB:</h3>';
+
+		if (storeName == 'admins') {
+			admins_data.forEach(admin => {
+				const adminDiv = document.createElement('div');
+				adminDiv.innerHTML = `
+					<h4>${admin.first_name} ${admin.last_name}</h4>
+					<p><strong>ID:</strong> ${admin.id}</p>
+					<p><strong>Email:</strong> ${admin.email}</p>
+					<hr>
+				`;
+				outputDiv.appendChild(adminDiv);
+			});
+		}
+
+		if (storeName == 'doctors') {
+			doctors_data.forEach(doctor => {
+				const doctorDiv = document.createElement('div');
+				doctorDiv.innerHTML = `
+					<h4>${doctor.first_name} ${doctor.last_name}</h4>
+					<p><strong>ID:</strong> ${doctor.id}</p>
+					<p><strong>Gender:</strong> ${doctor.gender}</p>
+					<p><strong>Address:</strong> ${doctor.Address}</p>
+					<p><strong>Email:</strong> ${doctor.email}</p>
+					<p><strong>Telephone:</strong> ${doctor.Telephone}</p>
+					<hr>
+				`;
+				outputDiv.appendChild(doctorDiv);
+			});
+		}
+
+		if (storeName == 'patients') {
+			patients_data.forEach(patient => {
+				const patientDiv = document.createElement('div');
+				patientDiv.innerHTML = `
+					<h4>${patient.First} ${patient.Last}</h4>
+					<p><strong>ID:</strong> ${patient.id}</p>
+					<p><strong>NHS:</strong> ${patient.NHS}</p>
+					<p><strong>DOB:</strong> ${patient.DOB}</p>
+					<p><strong>Gender:</strong> ${patient.Gender}</p>
+					<p><strong>Address:</strong> ${patient.Address}</p>
+					<p><strong>Email:</strong> ${patient.email}</p>
+					<p><strong>Telephone:</strong> ${patient.Telephone}</p>
+					<p><strong>Allergies:</strong> ${patient.Allergies}</p>
+					<hr>
+				`;
+				outputDiv.appendChild(patientDiv);
+			});
+		}
+
+		if (storeName == 'medicines') {
+			medicines_data.forEach(medicine => {
+				const medicineDiv = document.createElement('div');
+				medicineDiv.innerHTML = `
+					<h4>${medicine.Drug}</h4>
+					<p><strong>ID:</strong> ${medicine.id}</p>
+					<hr>
+				`;
+				outputDiv.appendChild(medicineDiv);
+			});
+		}
+
+    }
+
+    function deleteDB() {
+
+        console.log("Deleting DB - refresh browser page to see effect of");
+		alert("Deleting DB - refresh browser page to see effect of");
+
+		// the database cannot be deleted while this page still has it open
+		if (db) {
+            db.close();
+        }
+
+		const request = indexedDB.deleteDatabase(dbName);
+
+        request.onerror = function(event) {
+            console.log("Error deleting IndexedDB database");
+        };
+
+        request.onsuccess = function(event) {
+            console.log("IndexedDB database deleted successfully");
+        };
+
+    }
+
+	function closeDB() {
+
+        db.close();
+        console.log("Closed DB");
+    }
+
+    function encryptData(text) {
+        var enText = CryptoJS.AES.encrypt(text, encryptionKey).toString();
+        return enText;
+    }
+
+    function decryptData(text) {
+        var deText = CryptoJS.AES.decrypt(text, encryptionKey).toString(CryptoJS.enc.Utf8);
+        return deText ;
+    }
+
+</script>
+
+</body>
+</html>

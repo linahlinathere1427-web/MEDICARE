@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../../css/style.css">
+</head>
+<body>
+    <div class="layout">
+
+        <aside class="sidebar">
+            <h2>MEDICARE DUBAI</h2>
+            <nav>
+                <a href="admin_dashboard.html" class="active">Manage Patients</a>
+                <a href="../login/login.html" id="logout-link">Logout</a>
+            </nav>
+        </aside>
+
+        <main class="content">
+
+            <header class="topbar">
+                <h1>Manage Patients</h1>
+                <div class="profile">
+                    <div class="avatar" id="admin-initials">--</div>
+                    <strong id="admin-name">Loading...</strong>
+                </div>
+            </header>
+
+            <!-- Add / update form -->
+            <section class="card">
+                <h2 id="formTitle">Add Patient</h2>
+
+                <form id="patientForm" onsubmit="savePatient(event)">
+                    <label for="firstName">First name</label>
+                    <input type="text" id="firstName" required>
+
+                    <label for="lastName">Last name</label>
+                    <input type="text" id="lastName" required>
+
+                    <label for="email">Email</label>
+                    <input type="text" id="email" required>
+
+                    <label for="address">Address</label>
+                    <input type="text" id="address" required>
+
+                    <label for="telephone">Telephone</label>
+                    <input type="text" id="telephone" required>
+
+                    <label for="dob">Date of birth</label>
+                    <input type="date" id="dob" required>
+
+                    <label for="nhs">NHS number (10 digits)</label>
+                    <input type="text" id="nhs" required>
+
+                    <button class="btn" type="submit" id="saveButton">Add patient</button>
+                    <button class="btn" type="button" onclick="clearForm()">Clear</button>
+                </form>
+            </section>
+
+            <!-- Patient list -->
+            <section class="card">
+                <h2>All Patients</h2>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Telephone</th>
+                            <th>NHS</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patientRows">
+                        <tr><td colspan="5">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </section>
+
+        </main>
+    </div>
+
+    <script src="../../lib/crypto-js.min.js"></script>
+    <script src="../../js/config.js"></script>
+    <script src="../../js/encryption.js"></script>
+    <script src="../../js/validation.js"></script>
+    <script src="../../js/utils.js"></script>
+    <script src="../../js/database.js"></script>
+    <script src="../../js/dbhelpers.js"></script>
+    <script src="../../js/fetchdata.js"></script>
+    <script>
+        var admin = requireRole("admin");
+
+        // The patient being edited (null means we are adding a new one)
+        var editingPatient = null;
+        var allPatients = [];
+
+        if (admin) {
+
+            document.getElementById("admin-name").textContent = admin.name;
+            document.getElementById("admin-initials").textContent = getInitials(admin.name);
+
+            whenReady(showPatients);
+        }
+
+
+        // READ ALL: show every patient
+        function showPatients() {
+
+            getAllRecords("patients", function (list) {
+
+                allPatients = list;
+                var html = "";
+
+                for (var i = 0; i < list.length; i++) {
+
+                    var p = list[i];
+
+                    html += "<tr>";
+                    html += "<td>" + (p.First || "") + " " + (p.Last || "") + "</td>";
+                    html += "<td>" + p.email + "</td>";
+                    html += "<td>" + (p.Telephone || "") + "</td>";
+                    html += "<td>" + (p.NHS || "") + "</td>";
+                    html += '<td><button class="btn" onclick="editPatient(' + p.id + ')">Edit</button> ';
+                    html += '<button class="btn danger" onclick="removePatient(' + p.id + ')">Delete</button></td>';
+                    html += "</tr>";
+                }
+
+                if (html == "") {
+                    html = "<tr><td colspan='5'>No patients.</td></tr>";
+                }
+
+                document.getElementById("patientRows").innerHTML = html;
+            });
+        }
+
+
+        function unescapeInput(text) {
+            return String(text)
+                .replace(/&#x2F;/g, "/")
+                .replace(/&#x27;/g, "'")
+                .replace(/&quot;/g, '"')
+                .replace(/&gt;/g, ">")
+                .replace(/&lt;/g, "<")
+                .replace(/&amp;/g, "&");
+        }
+
+
+        // Put a patient into the form so it can be changed
+        function editPatient(id) {
+
+            for (var i = 0; i < allPatients.length; i++) {
+
+                if (allPatients[i].id == id) {
+                    editingPatient = allPatients[i];
+                }
+            }
+
+            var p = editingPatient;
+            var dob = p.DOB || "";
+            var parts;
+
+            // 25/12/1990 must become 1990-12-25 for the date box
+            if (dob.indexOf("/") != -1) {
+
+                parts = dob.split("/");
+
+                var day = parts[0];
+                var month = parts[1];
+
+                if (day.length < 2) {
+                    day = "0" + day;
+                }
+
+                if (month.length < 2) {
+                    month = "0" + month;
+                }
+
+                dob = parts[2] + "-" + month + "-" + day;
+            }
+
+            document.getElementById("firstName").value = unescapeInput(p.First || "");
+            document.getElementById("lastName").value = unescapeInput(p.Last || "");
+            document.getElementById("email").value = p.email;
+            document.getElementById("address").value = unescapeInput(p.Address || "");
+            document.getElementById("telephone").value = p.Telephone || "";
+            document.getElementById("dob").value = dob;
+            document.getElementById("nhs").value = p.NHS || "";
+
+            document.getElementById("formTitle").textContent = "Update Patient";
+            document.getElementById("saveButton").textContent = "Update patient";
+
+            // Scroll up so you can see the form
+            window.scrollTo(0, 0);
+        }
+
+
+        // Empty the form and go back to "add" mode
+        function clearForm() {
+
+            editingPatient = null;
+            document.getElementById("patientForm").reset();
+            document.getElementById("formTitle").textContent = "Add Patient";
+            document.getElementById("saveButton").textContent = "Add patient";
+        }
+
+
+        // ADD a new patient, or UPDATE the one being edited
+        function savePatient(event) {
+
+            event.preventDefault();
+
+            var firstName = document.getElementById("firstName").value.trim();
+            var lastName = document.getElementById("lastName").value.trim();
+            var email = document.getElementById("email").value.trim().toLowerCase();
+            var address = document.getElementById("address").value.trim();
+            var telephone = document.getElementById("telephone").value.trim();
+            var dob = document.getElementById("dob").value;
+            var nhs = document.getElementById("nhs").value.trim();
+
+            // Validation
+            if (!isValidName(firstName) || !isValidName(lastName)) {
+                alert("Names can only contain letters, spaces, hyphens and apostrophes.");
+                return;
+            }
+
+            if (!isValidEmail(email)) {
+                alert("Please enter a valid email address.");
+                return;
+            }
+
+            if (!isValidPhone(telephone)) {
+                alert("Please enter a valid telephone number.");
+                return;
+            }
+
+            if (!isValidDOB(dob)) {
+                alert("Please enter a valid date of birth.");
+                return;
+            }
+
+            if (!isValidNHS(nhs)) {
+                alert("NHS number must be exactly 10 digits.");
+                return;
+            }
+
+            // UPDATE
+            if (editingPatient != null) {
+
+                editingPatient.First = sanitizeInput(firstName);
+                editingPatient.Last = sanitizeInput(lastName);
+                editingPatient.email = email;
+                editingPatient.Address = sanitizeInput(address);
+                editingPatient.Telephone = telephone;
+                editingPatient.DOB = dob;
+                editingPatient.NHS = nhs;
+
+                saveRecord("patients", editingPatient, function () {
+                    alert("Patient updated.");
+                    clearForm();
+                    showPatients();
+                });
+
+                return;
+            }
+
+            // ADD: make sure the email is not already used
+            findUser("patients", email, function (existing) {
+
+                if (existing) {
+                    alert("A patient with this email already exists.");
+                    return;
+                }
+
+                // New patients get a generated password, shown once to the admin
+                var password = makePassword();
+
+                var patient = {
+                    First: sanitizeInput(firstName),
+                    Last: sanitizeInput(lastName),
+                    email: email,
+                    Address: sanitizeInput(address),
+                    Telephone: telephone,
+                    DOB: dob,
+                    NHS: nhs,
+                    password: encryptData(password)
+                };
+
+                addRecord("patients", patient, function () {
+                    alert("Patient added.\nTemporary password: " + password + "\nGive this to the patient.");
+                    clearForm();
+                    showPatients();
+                });
+            });
+        }
+
+
+        // DELETE a patient
+        function removePatient(id) {
+
+            if (confirm("Delete this patient?")) {
+                deleteRecord("patients", id, showPatients);
+            }
+        }
+    </script>
+</body>
+</html>
